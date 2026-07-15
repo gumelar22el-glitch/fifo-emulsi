@@ -259,9 +259,9 @@
       <tbody></tbody>
     </table>
 
-    <div class="queue-label">Detail Pelanggaran FIFO Minggu Ini</div>
+    <div class="queue-label">Detail Ketidakpatuhan Minggu Ini</div>
     <table class="report-table" id="report-violation-table">
-      <thead><tr><th>Nama Bahan</th><th>Shift</th><th>Jam Mulai</th><th>Jam Dipakai</th></tr></thead>
+      <thead><tr><th>Nama Bahan</th><th>Shift</th><th>Jam Mulai</th><th>Jam Dipakai</th><th>Jenis Pelanggaran</th></tr></thead>
       <tbody></tbody>
     </table>
   </div>
@@ -317,6 +317,15 @@
     return {key:'expired', label:'Lewat Batas - Jangan Dipakai'};
   }
 
+  // Cek pelanggaran waktu resting: dipakai sebelum 30 menit (kepagian) atau setelah 180 menit (over resting)
+  function getTimeViolation(mulaiMs, usedAtMs){
+    if(!usedAtMs) return null;
+    const elapsedMin = (usedAtMs - mulaiMs)/60000;
+    if(elapsedMin < READY_MIN) return 'kepagian';
+    if(elapsedMin > EXPIRE_MIN) return 'over-resting';
+    return null;
+  }
+
   function renderList(){
     const now = new Date();
     $('fifo-clock').textContent = fmtTime(now);
@@ -361,11 +370,18 @@
       histEl.innerHTML = '';
     } else {
       histLabel.style.display = 'flex';
-      histEl.innerHTML = usedList.map(h => `
+      histEl.innerHTML = usedList.map(h => {
+        const timeViol = getTimeViolation(h.mulai, h.used_at);
+        const tags = [];
+        if(h.violation) tags.push('<span class="violation-tag">⚠ BUKAN URUTAN FIFO</span>');
+        if(timeViol === 'kepagian') tags.push('<span class="violation-tag">⚠ DIPAKAI KEPAGIAN (&lt;30 menit)</span>');
+        if(timeViol === 'over-resting') tags.push('<span class="violation-tag">⚠ OVER RESTING (&gt;180 menit)</span>');
+        return `
         <div class="fifo-history">
           <span>${escapeHtml(h.nama)} &mdash; dipakai ${fmtDateTime(new Date(h.used_at))}</span>
-          <span>${h.violation ? '<span class="violation-tag">⚠ BUKAN URUTAN FIFO</span>' : 'sesuai FIFO'}</span>
-        </div>`).join('');
+          <span>${tags.length ? tags.join(' ') : 'sesuai FIFO'}</span>
+        </div>`;
+      }).join('');
     }
   }
 
@@ -453,7 +469,18 @@
   function computeReport(range){
     const inRange = batches.filter(b => b.mulai >= range.start && b.mulai <= range.end);
     const usedInRange = batches.filter(b => b.used && b.used_at >= range.start && b.used_at <= range.end);
-    const violations = usedInRange.filter(b => b.violation);
+
+    // gabungkan info pelanggaran: urutan FIFO salah, DAN/ATAU dipakai di luar rentang waktu 30-180 menit
+    const usedAnnotated = usedInRange.map(b => {
+      const timeViol = getTimeViolation(b.mulai, b.used_at);
+      return {
+        ...b,
+        orderViolation: !!b.violation,
+        timeViolation: timeViol, // null | 'kepagian' | 'over-resting'
+        isViolation: !!b.violation || !!timeViol
+      };
+    });
+    const violations = usedAnnotated.filter(b => b.isViolation);
 
     const shifts = ['Pagi', 'Siang', 'Malam', '(tanpa shift)'];
     const perShift = {};
@@ -464,16 +491,16 @@
       if(!perShift[key]) perShift[key] = { masuk:0, dipakai:0, pelanggaran:0 };
       perShift[key].masuk++;
     });
-    usedInRange.forEach(b => {
+    usedAnnotated.forEach(b => {
       const key = b.shift || '(tanpa shift)';
       if(!perShift[key]) perShift[key] = { masuk:0, dipakai:0, pelanggaran:0 };
       perShift[key].dipakai++;
-      if(b.violation) perShift[key].pelanggaran++;
+      if(b.isViolation) perShift[key].pelanggaran++;
     });
 
     return {
       totalMasuk: inRange.length,
-      totalDipakai: usedInRange.length,
+      totalDipakai: usedAnnotated.length,
       totalPelanggaran: violations.length,
       perShift,
       violations: violations.sort((a,b) => (b.used_at||0) - (a.used_at||0))
@@ -505,11 +532,11 @@
         <div class="value">${report.totalDipakai}</div>
       </div>
       <div class="report-card ${report.totalPelanggaran > 0 ? 'warn' : ''}">
-        <div class="label">Pelanggaran FIFO</div>
+        <div class="label">Total Tidak Patuh</div>
         <div class="value">${report.totalPelanggaran}</div>
       </div>
       <div class="report-card">
-        <div class="label">Kepatuhan FIFO</div>
+        <div class="label">Kepatuhan Keseluruhan</div>
         <div class="value">${patuhPct}%</div>
       </div>
     `;
@@ -526,15 +553,22 @@
     $('report-shift-table').querySelector('tbody').innerHTML =
       shiftRows || '<tr><td colspan="4" style="text-align:center; color:var(--text-dim);">Tidak ada data di minggu ini</td></tr>';
 
-    const violationRows = report.violations.map(v => `
+    const violationRows = report.violations.map(v => {
+      const jenis = [];
+      if(v.orderViolation) jenis.push('Bukan Urutan FIFO');
+      if(v.timeViolation === 'kepagian') jenis.push('Dipakai Kepagian (&lt;30 menit)');
+      if(v.timeViolation === 'over-resting') jenis.push('Over Resting (&gt;180 menit)');
+      return `
       <tr>
         <td>${escapeHtml(v.nama)}</td>
         <td>${escapeHtml(v.shift || '-')}</td>
         <td>${fmtDateTimeFull(v.mulai)}</td>
         <td>${fmtDateTimeFull(v.used_at)}</td>
-      </tr>`).join('');
+        <td><span class="violation-tag">${jenis.join(', ')}</span></td>
+      </tr>`;
+    }).join('');
     $('report-violation-table').querySelector('tbody').innerHTML =
-      violationRows || '<tr><td colspan="4" style="text-align:center; color:var(--text-dim);">Tidak ada pelanggaran FIFO minggu ini 🎉</td></tr>';
+      violationRows || '<tr><td colspan="5" style="text-align:center; color:var(--text-dim);">Tidak ada pelanggaran minggu ini 🎉</td></tr>';
 
     return { report, range };
   }
@@ -553,10 +587,14 @@
     Object.entries(report.perShift).forEach(([shift, v]) => {
       if(v.masuk > 0 || v.dipakai > 0) csv += `${shift},${v.masuk},${v.dipakai},${v.pelanggaran}\n`;
     });
-    csv += '\nDetail Pelanggaran FIFO\n';
-    csv += 'Nama Bahan,Shift,Jam Mulai,Jam Dipakai\n';
+    csv += '\nDetail Ketidakpatuhan\n';
+    csv += 'Nama Bahan,Shift,Jam Mulai,Jam Dipakai,Jenis Pelanggaran\n';
     report.violations.forEach(v => {
-      csv += `"${v.nama}",${v.shift||'-'},${fmtDateTimeFull(v.mulai)},${fmtDateTimeFull(v.used_at)}\n`;
+      const jenis = [];
+      if(v.orderViolation) jenis.push('Bukan Urutan FIFO');
+      if(v.timeViolation === 'kepagian') jenis.push('Dipakai Kepagian (<30 menit)');
+      if(v.timeViolation === 'over-resting') jenis.push('Over Resting (>180 menit)');
+      csv += `"${v.nama}",${v.shift||'-'},${fmtDateTimeFull(v.mulai)},${fmtDateTimeFull(v.used_at)},"${jenis.join('; ')}"\n`;
     });
 
     const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
