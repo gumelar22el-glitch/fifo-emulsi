@@ -1,0 +1,367 @@
+<!doctype html>
+<html lang="id">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Monitoring FIFO Bahan Emulsi</title>
+<style>
+  :root{
+    --bg: #1c1f22;
+    --panel: #24282c;
+    --panel2: #2c3136;
+    --line: #3a4046;
+    --text: #eceff1;
+    --text-dim: #9aa4ab;
+    --amber: #ffb020;
+    --green: #3ecf6e;
+    --red: #ff5252;
+    --blue: #4fa8e8;
+    --mono: 'JetBrains Mono', 'Courier New', monospace;
+    --sans: -apple-system, 'Segoe UI', Roboto, sans-serif;
+  }
+  *{box-sizing:border-box;}
+  body{margin:0; background:var(--bg);}
+  #fifo-root{
+    background:var(--bg);
+    color:var(--text);
+    font-family:var(--sans);
+    padding:20px;
+    max-width:960px;
+    margin:0 auto;
+    min-height:100vh;
+  }
+  .fifo-header{
+    display:flex;
+    justify-content:space-between;
+    align-items:flex-end;
+    border-bottom:3px solid var(--amber);
+    padding-bottom:14px;
+    margin-bottom:18px;
+    flex-wrap:wrap;
+    gap:10px;
+  }
+  .fifo-title{
+    font-size:13px;
+    letter-spacing:3px;
+    color:var(--amber);
+    font-weight:700;
+    text-transform:uppercase;
+    font-family:var(--mono);
+  }
+  .fifo-sub{
+    font-size:22px;
+    font-weight:700;
+    margin-top:4px;
+  }
+  .fifo-clock{
+    font-family:var(--mono);
+    font-size:24px;
+    color:var(--text-dim);
+    text-align:right;
+  }
+  .fifo-sync{ font-size:11px; color:var(--text-dim); margin-top:2px; }
+  .fifo-form{
+    display:flex;
+    gap:10px;
+    flex-wrap:wrap;
+    background:var(--panel);
+    border:1px solid var(--line);
+    border-radius:10px;
+    padding:14px;
+    margin-bottom:20px;
+    align-items:end;
+  }
+  .fifo-field{display:flex; flex-direction:column; gap:5px;}
+  .fifo-field label{font-size:11px; color:var(--text-dim); letter-spacing:1px; text-transform:uppercase;}
+  .fifo-field input, .fifo-field select{
+    background:var(--panel2);
+    border:1px solid var(--line);
+    color:var(--text);
+    padding:9px 10px;
+    border-radius:6px;
+    font-size:14px;
+    font-family:var(--sans);
+  }
+  .fifo-field input:focus{outline:2px solid var(--amber); border-color:var(--amber);}
+  .fifo-btn{
+    background:var(--amber);
+    color:#1c1f22;
+    border:none;
+    padding:10px 18px;
+    border-radius:6px;
+    font-weight:700;
+    font-size:13px;
+    cursor:pointer;
+    letter-spacing:0.5px;
+  }
+  .fifo-btn:hover{filter:brightness(1.08);}
+  .fifo-btn.secondary{background:transparent; border:1px solid var(--line); color:var(--text-dim);}
+  .queue-label{
+    font-size:12px;
+    color:var(--text-dim);
+    letter-spacing:2px;
+    text-transform:uppercase;
+    margin:18px 0 10px;
+    display:flex;
+    align-items:center;
+    gap:8px;
+  }
+  .queue-label::after{content:''; flex:1; height:1px; background:var(--line);}
+  .fifo-row{
+    display:grid;
+    grid-template-columns:36px 1fr 130px 150px 160px;
+    gap:14px;
+    align-items:center;
+    background:var(--panel);
+    border:1px solid var(--line);
+    border-left:5px solid var(--line);
+    border-radius:8px;
+    padding:14px 16px;
+    margin-bottom:10px;
+  }
+  .fifo-row.status-resting{border-left-color:var(--blue);}
+  .fifo-row.status-ready{border-left-color:var(--green);}
+  .fifo-row.status-warn{border-left-color:var(--amber);}
+  .fifo-row.status-expired{border-left-color:var(--red); background:#2c2223;}
+  .fifo-rank{ font-family:var(--mono); font-size:18px; font-weight:700; color:var(--text-dim); text-align:center; }
+  .fifo-row.status-resting .fifo-rank, .fifo-row.status-ready .fifo-rank{color:var(--amber);}
+  .fifo-name{font-weight:700; font-size:15px;}
+  .fifo-time{font-size:12px; color:var(--text-dim); margin-top:2px; font-family:var(--mono);}
+  .fifo-countdown{font-family:var(--mono); font-size:16px; text-align:center;}
+  .fifo-status-badge{
+    font-size:11px; font-weight:700; letter-spacing:1px; text-transform:uppercase;
+    padding:6px 10px; border-radius:5px; text-align:center;
+  }
+  .status-resting .fifo-status-badge{background:rgba(79,168,232,0.15); color:var(--blue);}
+  .status-ready .fifo-status-badge{background:rgba(62,207,110,0.15); color:var(--green);}
+  .status-warn .fifo-status-badge{background:rgba(255,176,32,0.18); color:var(--amber);}
+  .status-expired .fifo-status-badge{background:rgba(255,82,82,0.18); color:var(--red);}
+  .fifo-actions{display:flex; gap:6px; justify-content:flex-end;}
+  .fifo-use-btn{
+    background:var(--green); color:#12291c; border:none; padding:8px 14px;
+    border-radius:6px; font-weight:700; font-size:12px; cursor:pointer;
+  }
+  .fifo-del-btn{
+    background:transparent; border:1px solid var(--line); color:var(--text-dim);
+    padding:8px 10px; border-radius:6px; cursor:pointer; font-size:12px;
+  }
+  .fifo-empty{
+    color:var(--text-dim); font-size:13px; text-align:center; padding:24px;
+    border:1px dashed var(--line); border-radius:8px;
+  }
+  .fifo-history{
+    font-size:12px; color:var(--text-dim); display:flex; justify-content:space-between;
+    padding:8px 14px; border-bottom:1px solid var(--line);
+  }
+  .fifo-history:last-child{border-bottom:none;}
+  .violation-tag{color:var(--red); font-weight:700;}
+  @media (max-width:640px){
+    .fifo-row{grid-template-columns:1fr; text-align:left;}
+    .fifo-actions{justify-content:flex-start;}
+    .fifo-clock{text-align:left;}
+    .fifo-header{flex-direction:column; align-items:flex-start;}
+  }
+</style>
+</head>
+<body>
+<div id="fifo-root">
+  <div class="fifo-header">
+    <div>
+      <div class="fifo-title">FIFO CONTROL &mdash; MEATCAR</div>
+      <div class="fifo-sub">Monitoring Resting Bahan Emulsi</div>
+    </div>
+    <div>
+      <div class="fifo-clock" id="fifo-clock">--:--:--</div>
+      <div class="fifo-sync" id="fifo-sync">menghubungkan...</div>
+    </div>
+  </div>
+
+  <div class="fifo-form">
+    <div class="fifo-field">
+      <label for="fifo-nama">Nama Bahan / Batch</label>
+      <input type="text" id="fifo-nama" placeholder="cth: Emulsi A - Batch 12" />
+    </div>
+    <div class="fifo-field">
+      <label for="fifo-mulai">Jam Mulai Resting</label>
+      <input type="datetime-local" id="fifo-mulai" />
+    </div>
+    <div class="fifo-field">
+      <label for="fifo-shift">Shift</label>
+      <select id="fifo-shift">
+        <option value="">-</option>
+        <option value="Pagi">Pagi</option>
+        <option value="Siang">Siang</option>
+        <option value="Malam">Malam</option>
+      </select>
+    </div>
+    <button class="fifo-btn" id="fifo-add-btn">+ Masukkan ke Meatcar</button>
+    <button class="fifo-btn secondary" id="fifo-now-btn" type="button">Set Jam Sekarang</button>
+  </div>
+
+  <div class="queue-label">Antrian Meatcar (urutan ambil = dari atas)</div>
+  <div id="fifo-list"></div>
+
+  <div class="queue-label" id="fifo-history-label" style="display:none;">Riwayat Pemakaian</div>
+  <div id="fifo-history" style="background:var(--panel); border:1px solid var(--line); border-radius:8px; overflow:hidden;"></div>
+</div>
+
+<script>
+(function(){
+  const READY_MIN = 30;
+  const EXPIRE_MIN = 180;
+  const WARN_BEFORE_MIN = 20;
+
+  let batches = [];
+  const $ = (id) => document.getElementById(id);
+
+  function pad(n){ return n.toString().padStart(2,'0'); }
+  function fmtTime(d){ return pad(d.getHours())+':'+pad(d.getMinutes())+':'+pad(d.getSeconds()); }
+  function fmtDateTime(d){ return pad(d.getDate())+'/'+pad(d.getMonth()+1)+' '+pad(d.getHours())+':'+pad(d.getMinutes()); }
+  function fmtDuration(ms){
+    const totalSec = Math.max(0, Math.floor(Math.abs(ms)/1000));
+    const h = Math.floor(totalSec/3600);
+    const m = Math.floor((totalSec%3600)/60);
+    const s = totalSec%60;
+    if(h>0) return h+'j '+pad(m)+'m';
+    return pad(m)+':'+pad(s);
+  }
+  function escapeHtml(s){ const d=document.createElement('div'); d.textContent=s; return d.innerHTML; }
+
+  function setDefaultDatetime(){
+    const now = new Date();
+    now.setSeconds(0,0);
+    const tzOffset = now.getTimezoneOffset()*60000;
+    $('fifo-mulai').value = new Date(now - tzOffset).toISOString().slice(0,16);
+  }
+
+  async function fetchBatches(){
+    try{
+      const res = await fetch('/api/batches');
+      if(!res.ok) throw new Error('fetch gagal');
+      batches = await res.json();
+      $('fifo-sync').textContent = 'tersinkron ' + fmtTime(new Date());
+    }catch(e){
+      $('fifo-sync').textContent = 'gagal sinkron, cek koneksi';
+    }
+    renderList();
+  }
+
+  function getStatus(mulaiMs, now){
+    const elapsedMin = (now - mulaiMs)/60000;
+    if(elapsedMin < 0) return {key:'resting', label:'Belum Waktunya'};
+    if(elapsedMin < READY_MIN) return {key:'resting', label:'Resting'};
+    if(elapsedMin < EXPIRE_MIN - WARN_BEFORE_MIN) return {key:'ready', label:'Siap Pakai'};
+    if(elapsedMin < EXPIRE_MIN) return {key:'warn', label:'Segera Habis'};
+    return {key:'expired', label:'Lewat Batas - Jangan Dipakai'};
+  }
+
+  function renderList(){
+    const now = new Date();
+    $('fifo-clock').textContent = fmtTime(now);
+
+    const active = batches.filter(b => !b.used).sort((a,b) => a.mulai - b.mulai);
+    const listEl = $('fifo-list');
+
+    if(active.length === 0){
+      listEl.innerHTML = '<div class="fifo-empty">Belum ada bahan di meatcar. Tambahkan batch di atas.</div>';
+    } else {
+      listEl.innerHTML = active.map((b, idx) => {
+        const st = getStatus(b.mulai, now.getTime());
+        const readyAt = b.mulai + READY_MIN*60000;
+        const expireAt = b.mulai + EXPIRE_MIN*60000;
+        let countdownText, countdownLabel;
+        if(st.key === 'resting'){ countdownText = fmtDuration(readyAt - now.getTime()); countdownLabel = 'menuju siap'; }
+        else if(st.key === 'expired'){ countdownText = fmtDuration(now.getTime() - expireAt); countdownLabel = 'lewat batas'; }
+        else { countdownText = fmtDuration(expireAt - now.getTime()); countdownLabel = 'sisa waktu'; }
+        const shiftTag = b.shift ? ' &middot; Shift ' + escapeHtml(b.shift) : '';
+        return `
+        <div class="fifo-row status-${st.key}" data-id="${b.id}">
+          <div class="fifo-rank">${idx+1}</div>
+          <div>
+            <div class="fifo-name">${escapeHtml(b.nama)}</div>
+            <div class="fifo-time">Mulai ${fmtDateTime(new Date(b.mulai))} &middot; Siap ${fmtDateTime(new Date(readyAt))} &middot; Batas ${fmtDateTime(new Date(expireAt))}${shiftTag}</div>
+          </div>
+          <div class="fifo-countdown">${countdownText}<div style="font-size:10px;color:var(--text-dim);text-transform:uppercase;letter-spacing:1px;">${countdownLabel}</div></div>
+          <div class="fifo-status-badge">${st.label}</div>
+          <div class="fifo-actions">
+            <button class="fifo-use-btn" data-action="use" data-id="${b.id}">Ambil / Pakai</button>
+            <button class="fifo-del-btn" data-action="del" data-id="${b.id}" title="Hapus">✕</button>
+          </div>
+        </div>`;
+      }).join('');
+    }
+
+    const histEl = $('fifo-history');
+    const histLabel = $('fifo-history-label');
+    const usedList = batches.filter(b => b.used).sort((a,b) => (b.used_at||0) - (a.used_at||0)).slice(0,10);
+    if(usedList.length === 0){
+      histLabel.style.display = 'none';
+      histEl.innerHTML = '';
+    } else {
+      histLabel.style.display = 'flex';
+      histEl.innerHTML = usedList.map(h => `
+        <div class="fifo-history">
+          <span>${escapeHtml(h.nama)} &mdash; dipakai ${fmtDateTime(new Date(h.used_at))}</span>
+          <span>${h.violation ? '<span class="violation-tag">⚠ BUKAN URUTAN FIFO</span>' : 'sesuai FIFO'}</span>
+        </div>`).join('');
+    }
+  }
+
+  async function addBatch(){
+    const nama = $('fifo-nama').value.trim();
+    const mulaiVal = $('fifo-mulai').value;
+    const shift = $('fifo-shift').value;
+    if(!nama){ alert('Isi nama bahan / batch dulu.'); return; }
+    if(!mulaiVal){ alert('Isi jam mulai resting.'); return; }
+    const mulai = new Date(mulaiVal).getTime();
+    await fetch('/api/batches', {
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({ nama, mulai, shift })
+    });
+    $('fifo-nama').value = '';
+    setDefaultDatetime();
+    await fetchBatches();
+  }
+
+  async function useBatch(id, force){
+    const res = await fetch('/api/batches/'+id+'/use', {
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({ force: !!force })
+    });
+    if(res.status === 409){
+      const data = await res.json();
+      const ok = confirm('PERINGATAN: ' + data.message + '\n\nTetap pakai batch ini?');
+      if(ok) await useBatch(id, true);
+      return;
+    }
+    await fetchBatches();
+  }
+
+  async function delBatch(id){
+    const target = batches.find(b => b.id === id);
+    if(!target) return;
+    if(!confirm('Hapus "'+target.nama+'" dari antrian?')) return;
+    await fetch('/api/batches/'+id, { method:'DELETE' });
+    await fetchBatches();
+  }
+
+  $('fifo-add-btn').addEventListener('click', addBatch);
+  $('fifo-now-btn').addEventListener('click', setDefaultDatetime);
+  $('fifo-list').addEventListener('click', (e) => {
+    const btn = e.target.closest('button[data-action]');
+    if(!btn) return;
+    const id = btn.getAttribute('data-id');
+    if(btn.getAttribute('data-action') === 'use') useBatch(id);
+    if(btn.getAttribute('data-action') === 'del') delBatch(id);
+  });
+
+  setDefaultDatetime();
+  fetchBatches();
+  setInterval(renderList, 1000);   // update countdown tiap detik (lokal, tanpa fetch)
+  setInterval(fetchBatches, 5000); // sinkron ulang ke server tiap 5 detik (multi-device)
+})();
+</script>
+</body>
+</html>
