@@ -155,6 +155,36 @@
   }
   .fifo-history:last-child{border-bottom:none;}
   .violation-tag{color:var(--red); font-weight:700;}
+  .fifo-tabs{ display:flex; gap:8px; margin-bottom:18px; }
+  .fifo-tab-btn{
+    background:transparent; border:1px solid var(--line); color:var(--text-dim);
+    padding:9px 16px; border-radius:6px; cursor:pointer; font-size:13px; font-weight:700;
+    letter-spacing:0.5px;
+  }
+  .fifo-tab-btn.active{ background:var(--amber); color:#1c1f22; border-color:var(--amber); }
+  .fifo-view{ display:none; }
+  .fifo-view.active{ display:block; }
+  .report-controls{
+    display:flex; gap:10px; align-items:end; flex-wrap:wrap;
+    background:var(--panel); border:1px solid var(--line); border-radius:10px;
+    padding:14px; margin-bottom:20px;
+  }
+  .report-summary{
+    display:grid; grid-template-columns:repeat(auto-fit,minmax(140px,1fr));
+    gap:10px; margin-bottom:20px;
+  }
+  .report-card{
+    background:var(--panel); border:1px solid var(--line); border-radius:10px;
+    padding:14px 16px;
+  }
+  .report-card .label{ font-size:11px; color:var(--text-dim); text-transform:uppercase; letter-spacing:1px; }
+  .report-card .value{ font-size:26px; font-weight:700; margin-top:6px; font-family:var(--mono); }
+  .report-card.warn .value{ color:var(--red); }
+  .report-table{ width:100%; border-collapse:collapse; background:var(--panel); border:1px solid var(--line); border-radius:10px; overflow:hidden; }
+  .report-table th, .report-table td{ padding:10px 14px; text-align:left; font-size:13px; border-bottom:1px solid var(--line); }
+  .report-table th{ color:var(--text-dim); text-transform:uppercase; font-size:11px; letter-spacing:1px; }
+  .report-table tr:last-child td{ border-bottom:none; }
+  .report-table tbody tr:hover{ background:var(--panel2); }
   @media (max-width:640px){
     .fifo-row{grid-template-columns:1fr; text-align:left;}
     .fifo-actions{justify-content:flex-start;}
@@ -176,33 +206,65 @@
     </div>
   </div>
 
-  <div class="fifo-form">
-    <div class="fifo-field">
-      <label for="fifo-nama">Nama Bahan / Batch</label>
-      <input type="text" id="fifo-nama" placeholder="cth: Emulsi A - Batch 12" />
-    </div>
-    <div class="fifo-field">
-      <label for="fifo-mulai">Jam Mulai Resting</label>
-      <input type="datetime-local" id="fifo-mulai" />
-    </div>
-    <div class="fifo-field">
-      <label for="fifo-shift">Shift</label>
-      <select id="fifo-shift">
-        <option value="">-</option>
-        <option value="Pagi">Pagi</option>
-        <option value="Siang">Siang</option>
-        <option value="Malam">Malam</option>
-      </select>
-    </div>
-    <button class="fifo-btn" id="fifo-add-btn">+ Masukkan ke Meatcar</button>
-    <button class="fifo-btn secondary" id="fifo-now-btn" type="button">Set Jam Sekarang</button>
+  <div class="fifo-tabs">
+    <button class="fifo-tab-btn active" id="tab-monitoring" data-view="monitoring">Monitoring</button>
+    <button class="fifo-tab-btn" id="tab-laporan" data-view="laporan">Laporan Mingguan</button>
   </div>
 
-  <div class="queue-label">Antrian Meatcar (urutan ambil = dari atas)</div>
-  <div id="fifo-list"></div>
+  <div class="fifo-view active" id="view-monitoring">
+    <div class="fifo-form">
+      <div class="fifo-field">
+        <label for="fifo-nama">Nama Bahan / Batch</label>
+        <input type="text" id="fifo-nama" placeholder="cth: Emulsi A - Batch 12" />
+      </div>
+      <div class="fifo-field">
+        <label for="fifo-mulai">Jam Mulai Resting</label>
+        <input type="datetime-local" id="fifo-mulai" />
+      </div>
+      <div class="fifo-field">
+        <label for="fifo-shift">Shift</label>
+        <select id="fifo-shift">
+          <option value="">-</option>
+          <option value="Pagi">Pagi</option>
+          <option value="Siang">Siang</option>
+          <option value="Malam">Malam</option>
+        </select>
+      </div>
+      <button class="fifo-btn" id="fifo-add-btn">+ Masukkan ke Meatcar</button>
+      <button class="fifo-btn secondary" id="fifo-now-btn" type="button">Set Jam Sekarang</button>
+    </div>
 
-  <div class="queue-label" id="fifo-history-label" style="display:none;">Riwayat Pemakaian</div>
-  <div id="fifo-history" style="background:var(--panel); border:1px solid var(--line); border-radius:8px; overflow:hidden;"></div>
+    <div class="queue-label">Antrian Meatcar (urutan ambil = dari atas)</div>
+    <div id="fifo-list"></div>
+
+    <div class="queue-label" id="fifo-history-label" style="display:none;">Riwayat Pemakaian</div>
+    <div id="fifo-history" style="background:var(--panel); border:1px solid var(--line); border-radius:8px; overflow:hidden;"></div>
+  </div>
+
+  <div class="fifo-view" id="view-laporan">
+    <div class="report-controls">
+      <div class="fifo-field">
+        <label for="report-week">Pilih Minggu</label>
+        <input type="week" id="report-week" />
+      </div>
+      <button class="fifo-btn" id="report-refresh-btn" type="button">Tampilkan</button>
+      <button class="fifo-btn secondary" id="report-export-btn" type="button">Export CSV</button>
+    </div>
+
+    <div class="report-summary" id="report-summary"></div>
+
+    <div class="queue-label">Rincian per Shift</div>
+    <table class="report-table" id="report-shift-table">
+      <thead><tr><th>Shift</th><th>Masuk</th><th>Dipakai</th><th>Pelanggaran FIFO</th></tr></thead>
+      <tbody></tbody>
+    </table>
+
+    <div class="queue-label">Detail Pelanggaran FIFO Minggu Ini</div>
+    <table class="report-table" id="report-violation-table">
+      <thead><tr><th>Nama Bahan</th><th>Shift</th><th>Jam Mulai</th><th>Jam Dipakai</th></tr></thead>
+      <tbody></tbody>
+    </table>
+  </div>
 </div>
 
 <script>
@@ -356,6 +418,170 @@
     if(btn.getAttribute('data-action') === 'use') useBatch(id);
     if(btn.getAttribute('data-action') === 'del') delBatch(id);
   });
+
+  // ===== LAPORAN MINGGUAN =====
+
+  function getISOWeekRange(weekStr){
+    // weekStr format dari <input type=week>: "2026-W29"
+    if(!weekStr) return null;
+    const [yearStr, weekPart] = weekStr.split('-W');
+    const year = parseInt(yearStr, 10);
+    const week = parseInt(weekPart, 10);
+    // cari hari Kamis di minggu ISO tsb sebagai acuan, lalu geser ke Senin
+    const simple = new Date(Date.UTC(year, 0, 1 + (week - 1) * 7));
+    const dayOfWeek = simple.getUTCDay() || 7;
+    const monday = new Date(simple);
+    monday.setUTCDate(simple.getUTCDate() - dayOfWeek + 1);
+    monday.setUTCHours(0,0,0,0);
+    const sunday = new Date(monday);
+    sunday.setUTCDate(monday.getUTCDate() + 6);
+    sunday.setUTCHours(23,59,59,999);
+    return { start: monday.getTime(), end: sunday.getTime() };
+  }
+
+  function getCurrentWeekValue(){
+    const now = new Date();
+    const jan1 = new Date(now.getFullYear(), 0, 1);
+    const dayOfYear = Math.floor((now - jan1) / 86400000) + 1;
+    const week = Math.ceil((dayOfYear + jan1.getDay() - 1) / 7) || 1;
+    return now.getFullYear() + '-W' + String(week).padStart(2,'0');
+  }
+
+  function fmtDateShort(d){ return pad(d.getDate())+'/'+pad(d.getMonth()+1)+'/'+d.getFullYear(); }
+  function fmtDateTimeFull(ms){ if(!ms) return '-'; const d = new Date(ms); return fmtDateShort(d)+' '+pad(d.getHours())+':'+pad(d.getMinutes()); }
+
+  function computeReport(range){
+    const inRange = batches.filter(b => b.mulai >= range.start && b.mulai <= range.end);
+    const usedInRange = batches.filter(b => b.used && b.used_at >= range.start && b.used_at <= range.end);
+    const violations = usedInRange.filter(b => b.violation);
+
+    const shifts = ['Pagi', 'Siang', 'Malam', '(tanpa shift)'];
+    const perShift = {};
+    shifts.forEach(s => perShift[s] = { masuk:0, dipakai:0, pelanggaran:0 });
+
+    inRange.forEach(b => {
+      const key = b.shift || '(tanpa shift)';
+      if(!perShift[key]) perShift[key] = { masuk:0, dipakai:0, pelanggaran:0 };
+      perShift[key].masuk++;
+    });
+    usedInRange.forEach(b => {
+      const key = b.shift || '(tanpa shift)';
+      if(!perShift[key]) perShift[key] = { masuk:0, dipakai:0, pelanggaran:0 };
+      perShift[key].dipakai++;
+      if(b.violation) perShift[key].pelanggaran++;
+    });
+
+    return {
+      totalMasuk: inRange.length,
+      totalDipakai: usedInRange.length,
+      totalPelanggaran: violations.length,
+      perShift,
+      violations: violations.sort((a,b) => (b.used_at||0) - (a.used_at||0))
+    };
+  }
+
+  function renderReport(){
+    const weekVal = $('report-week').value || getCurrentWeekValue();
+    $('report-week').value = weekVal;
+    const range = getISOWeekRange(weekVal);
+    if(!range) return;
+    const report = computeReport(range);
+
+    const patuhPct = report.totalDipakai > 0
+      ? Math.round(((report.totalDipakai - report.totalPelanggaran) / report.totalDipakai) * 100)
+      : 100;
+
+    $('report-summary').innerHTML = `
+      <div class="report-card">
+        <div class="label">Periode</div>
+        <div class="value" style="font-size:15px;">${fmtDateShort(new Date(range.start))} &ndash; ${fmtDateShort(new Date(range.end))}</div>
+      </div>
+      <div class="report-card">
+        <div class="label">Batch Masuk</div>
+        <div class="value">${report.totalMasuk}</div>
+      </div>
+      <div class="report-card">
+        <div class="label">Batch Dipakai</div>
+        <div class="value">${report.totalDipakai}</div>
+      </div>
+      <div class="report-card ${report.totalPelanggaran > 0 ? 'warn' : ''}">
+        <div class="label">Pelanggaran FIFO</div>
+        <div class="value">${report.totalPelanggaran}</div>
+      </div>
+      <div class="report-card">
+        <div class="label">Kepatuhan FIFO</div>
+        <div class="value">${patuhPct}%</div>
+      </div>
+    `;
+
+    const shiftRows = Object.entries(report.perShift)
+      .filter(([k,v]) => v.masuk > 0 || v.dipakai > 0)
+      .map(([shift, v]) => `
+        <tr>
+          <td>${escapeHtml(shift)}</td>
+          <td>${v.masuk}</td>
+          <td>${v.dipakai}</td>
+          <td>${v.pelanggaran > 0 ? '<span class="violation-tag">'+v.pelanggaran+'</span>' : '0'}</td>
+        </tr>`).join('');
+    $('report-shift-table').querySelector('tbody').innerHTML =
+      shiftRows || '<tr><td colspan="4" style="text-align:center; color:var(--text-dim);">Tidak ada data di minggu ini</td></tr>';
+
+    const violationRows = report.violations.map(v => `
+      <tr>
+        <td>${escapeHtml(v.nama)}</td>
+        <td>${escapeHtml(v.shift || '-')}</td>
+        <td>${fmtDateTimeFull(v.mulai)}</td>
+        <td>${fmtDateTimeFull(v.used_at)}</td>
+      </tr>`).join('');
+    $('report-violation-table').querySelector('tbody').innerHTML =
+      violationRows || '<tr><td colspan="4" style="text-align:center; color:var(--text-dim);">Tidak ada pelanggaran FIFO minggu ini 🎉</td></tr>';
+
+    return { report, range };
+  }
+
+  function exportReportCSV(){
+    const weekVal = $('report-week').value || getCurrentWeekValue();
+    const range = getISOWeekRange(weekVal);
+    const report = computeReport(range);
+
+    let csv = 'Laporan FIFO Mingguan\n';
+    csv += 'Periode,' + fmtDateShort(new Date(range.start)) + ' - ' + fmtDateShort(new Date(range.end)) + '\n\n';
+    csv += 'Total Batch Masuk,' + report.totalMasuk + '\n';
+    csv += 'Total Batch Dipakai,' + report.totalDipakai + '\n';
+    csv += 'Total Pelanggaran FIFO,' + report.totalPelanggaran + '\n\n';
+    csv += 'Shift,Masuk,Dipakai,Pelanggaran\n';
+    Object.entries(report.perShift).forEach(([shift, v]) => {
+      if(v.masuk > 0 || v.dipakai > 0) csv += `${shift},${v.masuk},${v.dipakai},${v.pelanggaran}\n`;
+    });
+    csv += '\nDetail Pelanggaran FIFO\n';
+    csv += 'Nama Bahan,Shift,Jam Mulai,Jam Dipakai\n';
+    report.violations.forEach(v => {
+      csv += `"${v.nama}",${v.shift||'-'},${fmtDateTimeFull(v.mulai)},${fmtDateTimeFull(v.used_at)}\n`;
+    });
+
+    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'laporan-fifo-' + weekVal + '.csv';
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  }
+
+  function switchView(view){
+    document.querySelectorAll('.fifo-tab-btn').forEach(b => b.classList.toggle('active', b.dataset.view === view));
+    $('view-monitoring').classList.toggle('active', view === 'monitoring');
+    $('view-laporan').classList.toggle('active', view === 'laporan');
+    if(view === 'laporan') renderReport();
+  }
+
+  $('tab-monitoring').addEventListener('click', () => switchView('monitoring'));
+  $('tab-laporan').addEventListener('click', () => switchView('laporan'));
+  $('report-refresh-btn').addEventListener('click', renderReport);
+  $('report-export-btn').addEventListener('click', exportReportCSV);
+  $('report-week').value = getCurrentWeekValue();
 
   setDefaultDatetime();
   fetchBatches();
