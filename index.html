@@ -243,9 +243,9 @@
         <label for="fifo-shift">Shift</label>
         <select id="fifo-shift">
           <option value="">-</option>
-          <option value="Pagi">Pagi</option>
-          <option value="Siang">Siang</option>
-          <option value="Malam">Malam</option>
+          <option value="Shift 1">Shift 1</option>
+          <option value="Shift 2">Shift 2</option>
+          <option value="Shift 3">Shift 3</option>
         </select>
       </div>
       <button class="fifo-btn" id="fifo-add-btn">+ Masukkan ke Meatcar</button>
@@ -407,7 +407,7 @@
         if(timeViol === 'over-resting') tags.push('<span class="violation-tag">⚠ OVER RESTING (&gt;180 menit)</span>');
         return `
         <div class="fifo-history">
-          <span>${escapeHtml(h.nama)} &mdash; dipakai ${fmtDateTime(new Date(h.used_at))}</span>
+          <span>${escapeHtml(h.nama)}${h.shift ? ' &middot; ' + escapeHtml(h.shift) : ''} &mdash; dipakai ${fmtDateTime(new Date(h.used_at))}</span>
           <span>${tags.length ? tags.join(' ') : 'sesuai FIFO'}</span>
         </div>`;
       }).join('');
@@ -511,7 +511,7 @@
     });
     const violations = usedAnnotated.filter(b => b.isViolation);
 
-    const shifts = ['Pagi', 'Siang', 'Malam', '(tanpa shift)'];
+    const shifts = ['Shift 1', 'Shift 2', 'Shift 3', '(tanpa shift)'];
     const perShift = {};
     shifts.forEach(s => perShift[s] = { masuk:0, dipakai:0, pelanggaran:0 });
 
