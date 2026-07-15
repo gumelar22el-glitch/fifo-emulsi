@@ -6,16 +6,16 @@
 <title>Monitoring FIFO Bahan Emulsi</title>
 <style>
   :root{
-    --bg: #1c1f22;
-    --panel: #24282c;
-    --panel2: #2c3136;
-    --line: #3a4046;
-    --text: #eceff1;
-    --text-dim: #9aa4ab;
-    --amber: #ffb020;
-    --green: #3ecf6e;
-    --red: #ff5252;
-    --blue: #4fa8e8;
+    --bg: #f4f6f8;
+    --panel: #ffffff;
+    --panel2: #f0f3f6;
+    --line: #dfe4e9;
+    --text: #1e2733;
+    --text-dim: #707c8a;
+    --amber: #e8930f;
+    --green: #1f9d55;
+    --red: #dc3545;
+    --blue: #2f7fe0;
     --mono: 'JetBrains Mono', 'Courier New', monospace;
     --sans: -apple-system, 'Segoe UI', Roboto, sans-serif;
   }
@@ -52,11 +52,12 @@
     font-size:22px;
     font-weight:700;
     margin-top:4px;
+    color:var(--text);
   }
   .fifo-clock{
     font-family:var(--mono);
     font-size:24px;
-    color:var(--text-dim);
+    color:var(--text);
     text-align:right;
   }
   .fifo-sync{ font-size:11px; color:var(--text-dim); margin-top:2px; }
@@ -70,6 +71,7 @@
     padding:14px;
     margin-bottom:20px;
     align-items:end;
+    box-shadow:0 1px 2px rgba(20,30,40,0.04);
   }
   .fifo-field{display:flex; flex-direction:column; gap:5px;}
   .fifo-field label{font-size:11px; color:var(--text-dim); letter-spacing:1px; text-transform:uppercase;}
@@ -85,7 +87,7 @@
   .fifo-field input:focus{outline:2px solid var(--amber); border-color:var(--amber);}
   .fifo-btn{
     background:var(--amber);
-    color:#1c1f22;
+    color:#ffffff;
     border:none;
     padding:10px 18px;
     border-radius:6px;
@@ -118,27 +120,28 @@
     border-radius:8px;
     padding:14px 16px;
     margin-bottom:10px;
+    box-shadow:0 1px 2px rgba(20,30,40,0.04);
   }
   .fifo-row.status-resting{border-left-color:var(--blue);}
   .fifo-row.status-ready{border-left-color:var(--green);}
   .fifo-row.status-warn{border-left-color:var(--amber);}
-  .fifo-row.status-expired{border-left-color:var(--red); background:#2c2223;}
+  .fifo-row.status-expired{border-left-color:var(--red); background:#fdf1f1;}
   .fifo-rank{ font-family:var(--mono); font-size:18px; font-weight:700; color:var(--text-dim); text-align:center; }
   .fifo-row.status-resting .fifo-rank, .fifo-row.status-ready .fifo-rank{color:var(--amber);}
-  .fifo-name{font-weight:700; font-size:15px;}
+  .fifo-name{font-weight:700; font-size:15px; color:var(--text);}
   .fifo-time{font-size:12px; color:var(--text-dim); margin-top:2px; font-family:var(--mono);}
-  .fifo-countdown{font-family:var(--mono); font-size:16px; text-align:center;}
+  .fifo-countdown{font-family:var(--mono); font-size:16px; text-align:center; color:var(--text);}
   .fifo-status-badge{
     font-size:11px; font-weight:700; letter-spacing:1px; text-transform:uppercase;
     padding:6px 10px; border-radius:5px; text-align:center;
   }
-  .status-resting .fifo-status-badge{background:rgba(79,168,232,0.15); color:var(--blue);}
-  .status-ready .fifo-status-badge{background:rgba(62,207,110,0.15); color:var(--green);}
-  .status-warn .fifo-status-badge{background:rgba(255,176,32,0.18); color:var(--amber);}
-  .status-expired .fifo-status-badge{background:rgba(255,82,82,0.18); color:var(--red);}
+  .status-resting .fifo-status-badge{background:rgba(47,127,224,0.12); color:var(--blue);}
+  .status-ready .fifo-status-badge{background:rgba(31,157,85,0.12); color:var(--green);}
+  .status-warn .fifo-status-badge{background:rgba(232,147,15,0.15); color:var(--amber);}
+  .status-expired .fifo-status-badge{background:rgba(220,53,69,0.12); color:var(--red);}
   .fifo-actions{display:flex; gap:6px; justify-content:flex-end;}
   .fifo-use-btn{
-    background:var(--green); color:#12291c; border:none; padding:8px 14px;
+    background:var(--green); color:#ffffff; border:none; padding:8px 14px;
     border-radius:6px; font-weight:700; font-size:12px; cursor:pointer;
   }
   .fifo-del-btn{
@@ -157,17 +160,19 @@
   .violation-tag{color:var(--red); font-weight:700;}
   .fifo-tabs{ display:flex; gap:8px; margin-bottom:18px; }
   .fifo-tab-btn{
-    background:transparent; border:1px solid var(--line); color:var(--text-dim);
+    background:var(--panel); border:1px solid var(--line); color:var(--text-dim);
     padding:9px 16px; border-radius:6px; cursor:pointer; font-size:13px; font-weight:700;
     letter-spacing:0.5px;
+    display:flex; align-items:center; gap:6px;
   }
-  .fifo-tab-btn.active{ background:var(--amber); color:#1c1f22; border-color:var(--amber); }
+  .fifo-tab-btn.active{ background:var(--amber); color:#ffffff; border-color:var(--amber); }
   .fifo-view{ display:none; }
   .fifo-view.active{ display:block; }
   .report-controls{
     display:flex; gap:10px; align-items:end; flex-wrap:wrap;
     background:var(--panel); border:1px solid var(--line); border-radius:10px;
     padding:14px; margin-bottom:20px;
+    box-shadow:0 1px 2px rgba(20,30,40,0.04);
   }
   .report-summary{
     display:grid; grid-template-columns:repeat(auto-fit,minmax(140px,1fr));
@@ -176,15 +181,28 @@
   .report-card{
     background:var(--panel); border:1px solid var(--line); border-radius:10px;
     padding:14px 16px;
+    box-shadow:0 1px 2px rgba(20,30,40,0.04);
   }
   .report-card .label{ font-size:11px; color:var(--text-dim); text-transform:uppercase; letter-spacing:1px; }
-  .report-card .value{ font-size:26px; font-weight:700; margin-top:6px; font-family:var(--mono); }
+  .report-card .value{ font-size:26px; font-weight:700; margin-top:6px; font-family:var(--mono); color:var(--text); }
   .report-card.warn .value{ color:var(--red); }
   .report-table{ width:100%; border-collapse:collapse; background:var(--panel); border:1px solid var(--line); border-radius:10px; overflow:hidden; }
-  .report-table th, .report-table td{ padding:10px 14px; text-align:left; font-size:13px; border-bottom:1px solid var(--line); }
+  .report-table th, .report-table td{ padding:10px 14px; text-align:left; font-size:13px; border-bottom:1px solid var(--line); color:var(--text); }
   .report-table th{ color:var(--text-dim); text-transform:uppercase; font-size:11px; letter-spacing:1px; }
   .report-table tr:last-child td{ border-bottom:none; }
   .report-table tbody tr:hover{ background:var(--panel2); }
+  .lock-overlay{
+    display:flex; flex-direction:column; align-items:center; justify-content:center;
+    gap:14px; padding:60px 20px; background:var(--panel); border:1px solid var(--line);
+    border-radius:10px; text-align:center;
+  }
+  .lock-overlay .lock-icon{ font-size:36px; }
+  .lock-overlay input{
+    background:var(--panel2); border:1px solid var(--line); color:var(--text);
+    padding:10px 14px; border-radius:6px; font-size:14px; text-align:center; width:200px;
+  }
+  .lock-overlay input:focus{ outline:2px solid var(--amber); border-color:var(--amber); }
+  .lock-error{ color:var(--red); font-size:12px; min-height:16px; }
   @media (max-width:640px){
     .fifo-row{grid-template-columns:1fr; text-align:left;}
     .fifo-actions{justify-content:flex-start;}
@@ -208,7 +226,7 @@
 
   <div class="fifo-tabs">
     <button class="fifo-tab-btn active" id="tab-monitoring" data-view="monitoring">Monitoring</button>
-    <button class="fifo-tab-btn" id="tab-laporan" data-view="laporan">Laporan Mingguan</button>
+    <button class="fifo-tab-btn" id="tab-laporan" data-view="laporan">🔒 Laporan Mingguan</button>
   </div>
 
   <div class="fifo-view active" id="view-monitoring">
@@ -242,28 +260,39 @@
   </div>
 
   <div class="fifo-view" id="view-laporan">
-    <div class="report-controls">
-      <div class="fifo-field">
-        <label for="report-week">Pilih Minggu</label>
-        <input type="week" id="report-week" />
-      </div>
-      <button class="fifo-btn" id="report-refresh-btn" type="button">Tampilkan</button>
-      <button class="fifo-btn secondary" id="report-export-btn" type="button">Export CSV</button>
+    <div class="lock-overlay" id="lock-overlay">
+      <div class="lock-icon">🔒</div>
+      <div style="font-weight:700; font-size:15px;">Laporan ini dikunci</div>
+      <div style="color:var(--text-dim); font-size:13px;">Masukkan password untuk akses laporan mingguan</div>
+      <input type="password" id="lock-password" placeholder="Password" />
+      <button class="fifo-btn" id="lock-submit-btn" type="button">Buka Laporan</button>
+      <div class="lock-error" id="lock-error"></div>
     </div>
 
-    <div class="report-summary" id="report-summary"></div>
+    <div id="report-content" style="display:none;">
+      <div class="report-controls">
+        <div class="fifo-field">
+          <label for="report-week">Pilih Minggu</label>
+          <input type="week" id="report-week" />
+        </div>
+        <button class="fifo-btn" id="report-refresh-btn" type="button">Tampilkan</button>
+        <button class="fifo-btn secondary" id="report-export-btn" type="button">Export CSV</button>
+      </div>
 
-    <div class="queue-label">Rincian per Shift</div>
-    <table class="report-table" id="report-shift-table">
-      <thead><tr><th>Shift</th><th>Masuk</th><th>Dipakai</th><th>Pelanggaran FIFO</th></tr></thead>
-      <tbody></tbody>
-    </table>
+      <div class="report-summary" id="report-summary"></div>
 
-    <div class="queue-label">Detail Ketidakpatuhan Minggu Ini</div>
-    <table class="report-table" id="report-violation-table">
-      <thead><tr><th>Nama Bahan</th><th>Shift</th><th>Jam Mulai</th><th>Jam Dipakai</th><th>Jenis Pelanggaran</th></tr></thead>
-      <tbody></tbody>
-    </table>
+      <div class="queue-label">Rincian per Shift</div>
+      <table class="report-table" id="report-shift-table">
+        <thead><tr><th>Shift</th><th>Masuk</th><th>Dipakai</th><th>Pelanggaran FIFO</th></tr></thead>
+        <tbody></tbody>
+      </table>
+
+      <div class="queue-label">Detail Ketidakpatuhan Minggu Ini</div>
+      <table class="report-table" id="report-violation-table">
+        <thead><tr><th>Nama Bahan</th><th>Shift</th><th>Jam Mulai</th><th>Jam Dipakai</th><th>Jenis Pelanggaran</th></tr></thead>
+        <tbody></tbody>
+      </table>
+    </div>
   </div>
 </div>
 
@@ -608,11 +637,47 @@
     URL.revokeObjectURL(url);
   }
 
+  // ===== KUNCI PASSWORD LAPORAN =====
+  // Ganti password ini sesuai kebutuhan. Password tersimpan di sisi browser (bukan enkripsi tingkat tinggi,
+  // cukup untuk mencegah operator biasa buka laporan tanpa izin leader/QC).
+  const REPORT_PASSWORD = 'fifo2026';
+
+  function isReportUnlocked(){ return sessionStorage.getItem('fifo_report_unlocked') === '1'; }
+  function unlockReport(){ sessionStorage.setItem('fifo_report_unlocked', '1'); }
+
+  function checkLockState(){
+    if(isReportUnlocked()){
+      $('lock-overlay').style.display = 'none';
+      $('report-content').style.display = 'block';
+      renderReport();
+    } else {
+      $('lock-overlay').style.display = 'flex';
+      $('report-content').style.display = 'none';
+      $('lock-password').value = '';
+      $('lock-error').textContent = '';
+    }
+  }
+
+  function trySubmitPassword(){
+    const val = $('lock-password').value;
+    if(val === REPORT_PASSWORD){
+      unlockReport();
+      checkLockState();
+    } else {
+      $('lock-error').textContent = 'Password salah, coba lagi.';
+      $('lock-password').value = '';
+      $('lock-password').focus();
+    }
+  }
+
+  $('lock-submit-btn').addEventListener('click', trySubmitPassword);
+  $('lock-password').addEventListener('keydown', (e) => { if(e.key === 'Enter') trySubmitPassword(); });
+
   function switchView(view){
     document.querySelectorAll('.fifo-tab-btn').forEach(b => b.classList.toggle('active', b.dataset.view === view));
     $('view-monitoring').classList.toggle('active', view === 'monitoring');
     $('view-laporan').classList.toggle('active', view === 'laporan');
-    if(view === 'laporan') renderReport();
+    if(view === 'laporan') checkLockState();
   }
 
   $('tab-monitoring').addEventListener('click', () => switchView('monitoring'));
