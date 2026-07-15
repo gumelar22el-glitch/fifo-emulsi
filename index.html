@@ -249,7 +249,6 @@
         </select>
       </div>
       <button class="fifo-btn" id="fifo-add-btn">+ Masukkan ke Meatcar</button>
-      <button class="fifo-btn secondary" id="fifo-now-btn" type="button">Set Jam Sekarang</button>
     </div>
 
     <div class="queue-label">Antrian Meatcar (urutan ambil = dari atas)</div>
@@ -455,7 +454,6 @@
   }
 
   $('fifo-add-btn').addEventListener('click', addBatch);
-  $('fifo-now-btn').addEventListener('click', setDefaultDatetime);
   $('fifo-list').addEventListener('click', (e) => {
     const btn = e.target.closest('button[data-action]');
     if(!btn) return;
