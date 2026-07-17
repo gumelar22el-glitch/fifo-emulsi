@@ -193,8 +193,9 @@
   .report-table tbody tr:hover{ background:var(--panel2); }
   .lock-overlay{
     display:flex; flex-direction:column; align-items:center; justify-content:center;
-    gap:14px; padding:60px 20px; background:var(--panel); border:1px solid var(--line);
-    border-radius:10px; text-align:center;
+    gap:14px; padding:40px 30px; background:var(--panel); border:1px solid var(--line);
+    border-radius:10px; text-align:center; max-width:320px;
+    box-shadow:0 10px 30px rgba(20,30,40,0.15);
   }
   .lock-overlay .lock-icon{ font-size:36px; }
   .lock-overlay input{
@@ -203,6 +204,17 @@
   }
   .lock-overlay input:focus{ outline:2px solid var(--amber); border-color:var(--amber); }
   .lock-error{ color:var(--red); font-size:12px; min-height:16px; }
+  .modal-backdrop{
+    display:none; position:fixed; inset:0; background:rgba(20,30,40,0.5);
+    align-items:center; justify-content:center; z-index:1000; padding:20px;
+  }
+  .modal-backdrop.active{ display:flex; }
+  .fifo-spv-btn{
+    background:transparent; border:1px solid var(--line); color:var(--text-dim);
+    padding:6px 12px; border-radius:6px; cursor:pointer; font-size:11px; font-weight:700;
+    margin-top:6px;
+  }
+  .fifo-spv-btn.unlocked{ background:rgba(31,157,85,0.12); color:var(--green); border-color:var(--green); }
   @media (max-width:640px){
     .fifo-row{grid-template-columns:1fr; text-align:left;}
     .fifo-actions{justify-content:flex-start;}
@@ -221,6 +233,21 @@
     <div>
       <div class="fifo-clock" id="fifo-clock">--:--:--</div>
       <div class="fifo-sync" id="fifo-sync">menghubungkan...</div>
+      <button class="fifo-spv-btn" id="spv-toggle-btn" type="button">🔒 User</button>
+    </div>
+  </div>
+
+  <div class="modal-backdrop" id="modal-backdrop">
+    <div class="lock-overlay">
+      <div class="lock-icon">🔒</div>
+      <div style="font-weight:700; font-size:15px;">Akses Terbatas</div>
+      <div style="color:var(--text-dim); font-size:13px;">Masukkan password SPV/Manager untuk membuka Laporan &amp; izin Hapus</div>
+      <input type="password" id="lock-password" placeholder="Password" />
+      <div style="display:flex; gap:8px;">
+        <button class="fifo-btn" id="lock-submit-btn" type="button">Buka Akses</button>
+        <button class="fifo-btn secondary" id="lock-cancel-btn" type="button">Batal</button>
+      </div>
+      <div class="lock-error" id="lock-error"></div>
     </div>
   </div>
 
@@ -259,13 +286,8 @@
   </div>
 
   <div class="fifo-view" id="view-laporan">
-    <div class="lock-overlay" id="lock-overlay">
-      <div class="lock-icon">🔒</div>
-      <div style="font-weight:700; font-size:15px;">Laporan ini dikunci</div>
-      <div style="color:var(--text-dim); font-size:13px;">Masukkan password untuk akses laporan mingguan</div>
-      <input type="password" id="lock-password" placeholder="Password" />
-      <button class="fifo-btn" id="lock-submit-btn" type="button">Buka Laporan</button>
-      <div class="lock-error" id="lock-error"></div>
+    <div class="fifo-empty" id="laporan-locked-msg">
+      🔒 Laporan ini khusus SPV/Manager. Klik <strong>"User"</strong> di pojok kanan atas untuk membuka akses.
     </div>
 
     <div id="report-content" style="display:none;">
@@ -384,7 +406,7 @@
           <div class="fifo-status-badge">${st.label}</div>
           <div class="fifo-actions">
             <button class="fifo-use-btn" data-action="use" data-id="${b.id}">Ambil / Pakai</button>
-            <button class="fifo-del-btn" data-action="del" data-id="${b.id}" title="Hapus">✕</button>
+            ${isSpvUnlocked() ? `<button class="fifo-del-btn" data-action="del" data-id="${b.id}" title="Hapus">✕</button>` : ''}
           </div>
         </div>`;
       }).join('');
@@ -446,6 +468,7 @@
   }
 
   async function delBatch(id){
+    if(!isSpvUnlocked()){ alert('Hapus batch hanya untuk SPV/Manager. Login lewat tombol User dulu.'); return; }
     const target = batches.find(b => b.id === id);
     if(!target) return;
     if(!confirm('Hapus "'+target.nama+'" dari antrian?')) return;
@@ -635,32 +658,53 @@
     URL.revokeObjectURL(url);
   }
 
-  // ===== KUNCI PASSWORD LAPORAN =====
+  // ===== MODE SPV (akses Laporan Mingguan + izin Hapus batch) =====
   // Ganti password ini sesuai kebutuhan. Password tersimpan di sisi browser (bukan enkripsi tingkat tinggi,
-  // cukup untuk mencegah operator biasa buka laporan tanpa izin leader/QC).
-  const REPORT_PASSWORD = 'fifo2026';
+  // cukup untuk mencegah operator biasa mengakses fitur yang khusus SPV/Manager.
+  const SPV_PASSWORD = 'fifo2026';
 
-  function isReportUnlocked(){ return sessionStorage.getItem('fifo_report_unlocked') === '1'; }
-  function unlockReport(){ sessionStorage.setItem('fifo_report_unlocked', '1'); }
+  function isSpvUnlocked(){ return sessionStorage.getItem('fifo_spv_unlocked') === '1'; }
+  function unlockSpv(){ sessionStorage.setItem('fifo_spv_unlocked', '1'); }
+  function lockSpv(){ sessionStorage.removeItem('fifo_spv_unlocked'); }
 
-  function checkLockState(){
-    if(isReportUnlocked()){
-      $('lock-overlay').style.display = 'none';
+  function updateSpvUI(){
+    const btn = $('spv-toggle-btn');
+    if(isSpvUnlocked()){
+      btn.textContent = '🔓 User Aktif';
+      btn.classList.add('unlocked');
+    } else {
+      btn.textContent = '🔒 User';
+      btn.classList.remove('unlocked');
+    }
+    renderList(); // refresh supaya tombol hapus muncul/hilang sesuai status
+    if($('view-laporan').classList.contains('active')) refreshLaporanView();
+  }
+
+  function refreshLaporanView(){
+    if(isSpvUnlocked()){
+      $('laporan-locked-msg').style.display = 'none';
       $('report-content').style.display = 'block';
       renderReport();
     } else {
-      $('lock-overlay').style.display = 'flex';
+      $('laporan-locked-msg').style.display = 'block';
       $('report-content').style.display = 'none';
-      $('lock-password').value = '';
-      $('lock-error').textContent = '';
     }
   }
 
+  function openModal(){
+    $('modal-backdrop').classList.add('active');
+    $('lock-password').value = '';
+    $('lock-error').textContent = '';
+    $('lock-password').focus();
+  }
+  function closeModal(){ $('modal-backdrop').classList.remove('active'); }
+
   function trySubmitPassword(){
     const val = $('lock-password').value;
-    if(val === REPORT_PASSWORD){
-      unlockReport();
-      checkLockState();
+    if(val === SPV_PASSWORD){
+      unlockSpv();
+      closeModal();
+      updateSpvUI();
     } else {
       $('lock-error').textContent = 'Password salah, coba lagi.';
       $('lock-password').value = '';
@@ -668,14 +712,26 @@
     }
   }
 
+  $('spv-toggle-btn').addEventListener('click', () => {
+    if(isSpvUnlocked()){
+      if(confirm('Keluar dari akses User?')){ lockSpv(); updateSpvUI(); }
+    } else {
+      openModal();
+    }
+  });
   $('lock-submit-btn').addEventListener('click', trySubmitPassword);
+  $('lock-cancel-btn').addEventListener('click', closeModal);
   $('lock-password').addEventListener('keydown', (e) => { if(e.key === 'Enter') trySubmitPassword(); });
+  $('modal-backdrop').addEventListener('click', (e) => { if(e.target.id === 'modal-backdrop') closeModal(); });
 
   function switchView(view){
     document.querySelectorAll('.fifo-tab-btn').forEach(b => b.classList.toggle('active', b.dataset.view === view));
     $('view-monitoring').classList.toggle('active', view === 'monitoring');
     $('view-laporan').classList.toggle('active', view === 'laporan');
-    if(view === 'laporan') checkLockState();
+    if(view === 'laporan'){
+      if(isSpvUnlocked()) refreshLaporanView();
+      else { refreshLaporanView(); openModal(); }
+    }
   }
 
   $('tab-monitoring').addEventListener('click', () => switchView('monitoring'));
@@ -684,6 +740,7 @@
   $('report-export-btn').addEventListener('click', exportReportCSV);
   $('report-week').value = getCurrentWeekValue();
 
+  updateSpvUI();
   setDefaultDatetime();
   fetchBatches();
   setInterval(renderList, 1000);   // update countdown tiap detik (lokal, tanpa fetch)
