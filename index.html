@@ -281,7 +281,7 @@
     <div class="queue-label">Antrian Meatcar (urutan ambil = dari atas)</div>
     <div id="fifo-list"></div>
 
-    <div class="queue-label" id="fifo-history-label" style="display:none;">Riwayat Pemakaian</div>
+    <div class="queue-label" id="fifo-history-label" style="display:none;">Riwayat Pemakaian (Minggu Ini)</div>
     <div id="fifo-history" style="background:var(--panel); border:1px solid var(--line); border-radius:8px; overflow:hidden;"></div>
   </div>
 
@@ -414,7 +414,10 @@
 
     const histEl = $('fifo-history');
     const histLabel = $('fifo-history-label');
-    const usedList = batches.filter(b => b.used).sort((a,b) => (b.used_at||0) - (a.used_at||0)).slice(0,10);
+    const currentWeekRange = getISOWeekRange(getCurrentWeekValue());
+    const usedList = batches
+      .filter(b => b.used && b.used_at >= currentWeekRange.start && b.used_at <= currentWeekRange.end)
+      .sort((a,b) => (b.used_at||0) - (a.used_at||0));
     if(usedList.length === 0){
       histLabel.style.display = 'none';
       histEl.innerHTML = '';
